@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Key } from "lucide-react";
 
@@ -16,9 +18,19 @@ interface Software {
   version: string;
 }
 
+interface License {
+  id: string;
+  license_key: string;
+  buyer_name: string;
+  buyer_email: string;
+  created_at: string;
+  software: { name: string };
+}
+
 const AdminLicenseGeneration = () => {
   const { user } = useAuth();
   const [software, setSoftware] = useState<Software[]>([]);
+  const [recentLicenses, setRecentLicenses] = useState<License[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     software_id: "",
@@ -31,6 +43,7 @@ const AdminLicenseGeneration = () => {
 
   useEffect(() => {
     fetchSoftware();
+    fetchRecentLicenses();
   }, []);
 
   const fetchSoftware = async () => {
@@ -45,6 +58,24 @@ const AdminLicenseGeneration = () => {
       setSoftware(data || []);
     } catch (error: any) {
       toast.error("Failed to load software");
+    }
+  };
+
+  const fetchRecentLicenses = async () => {
+    try {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from("licenses")
+        .select("id, license_key, buyer_name, buyer_email, created_at, software(name)")
+        .eq("created_by", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setRecentLicenses(data || []);
+    } catch (error: any) {
+      console.error("Failed to load recent licenses:", error);
     }
   };
 
@@ -109,6 +140,9 @@ const AdminLicenseGeneration = () => {
         buyer_city: "",
         buyer_country: "",
       });
+
+      // Refresh recent licenses
+      fetchRecentLicenses();
     } catch (error: any) {
       toast.error(error.message || "Failed to generate license");
     } finally {
@@ -117,96 +151,137 @@ const AdminLicenseGeneration = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Key className="w-5 h-5 text-primary" />
-          <CardTitle>Generate License (Unlimited)</CardTitle>
-        </div>
-        <CardDescription>Create license keys for any software without quota restrictions</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="software">Software *</Label>
-            <Select
-              value={formData.software_id}
-              onValueChange={(value) => setFormData({ ...formData, software_id: value })}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select software" />
-              </SelectTrigger>
-              <SelectContent>
-                {software.map((sw) => (
-                  <SelectItem key={sw.id} value={sw.id}>
-                    {sw.name} - {sw.type} v{sw.version}
-                  </SelectItem>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Key className="w-5 h-5 text-primary" />
+            <CardTitle>Generate License (Unlimited)</CardTitle>
+          </div>
+          <CardDescription>Create license keys for any software without quota restrictions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="software">Software *</Label>
+              <Select
+                value={formData.software_id}
+                onValueChange={(value) => setFormData({ ...formData, software_id: value })}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select software" />
+                </SelectTrigger>
+                <SelectContent>
+                  {software.map((sw) => (
+                    <SelectItem key={sw.id} value={sw.id}>
+                      {sw.name} - {sw.type} v{sw.version}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="buyer_name">Buyer Name *</Label>
+                <Input
+                  id="buyer_name"
+                  value={formData.buyer_name}
+                  onChange={(e) => setFormData({ ...formData, buyer_name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="buyer_email">Buyer Email *</Label>
+                <Input
+                  id="buyer_email"
+                  type="email"
+                  value={formData.buyer_email}
+                  onChange={(e) => setFormData({ ...formData, buyer_email: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="buyer_phone">Buyer Phone *</Label>
+                <Input
+                  id="buyer_phone"
+                  type="tel"
+                  value={formData.buyer_phone}
+                  onChange={(e) => setFormData({ ...formData, buyer_phone: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="buyer_city">Buyer City</Label>
+                <Input
+                  id="buyer_city"
+                  value={formData.buyer_city}
+                  onChange={(e) => setFormData({ ...formData, buyer_city: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="buyer_country">Buyer Country</Label>
+              <Input
+                id="buyer_country"
+                value={formData.buyer_country}
+                onChange={(e) => setFormData({ ...formData, buyer_country: e.target.value })}
+              />
+            </div>
+
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Generating..." : "Generate License Key"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Licenses</CardTitle>
+          <CardDescription>Your latest generated licenses</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {recentLicenses.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">No licenses generated yet</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>License Key</TableHead>
+                  <TableHead>Software</TableHead>
+                  <TableHead>Buyer</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Created</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentLicenses.map((license) => (
+                  <TableRow key={license.id}>
+                    <TableCell className="font-mono text-sm">{license.license_key}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{license.software.name}</Badge>
+                    </TableCell>
+                    <TableCell>{license.buyer_name}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{license.buyer_email}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {new Date(license.created_at).toLocaleDateString()}
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="buyer_name">Buyer Name *</Label>
-              <Input
-                id="buyer_name"
-                value={formData.buyer_name}
-                onChange={(e) => setFormData({ ...formData, buyer_name: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="buyer_email">Buyer Email *</Label>
-              <Input
-                id="buyer_email"
-                type="email"
-                value={formData.buyer_email}
-                onChange={(e) => setFormData({ ...formData, buyer_email: e.target.value })}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="buyer_phone">Buyer Phone *</Label>
-              <Input
-                id="buyer_phone"
-                type="tel"
-                value={formData.buyer_phone}
-                onChange={(e) => setFormData({ ...formData, buyer_phone: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="buyer_city">Buyer City</Label>
-              <Input
-                id="buyer_city"
-                value={formData.buyer_city}
-                onChange={(e) => setFormData({ ...formData, buyer_city: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="buyer_country">Buyer Country</Label>
-            <Input
-              id="buyer_country"
-              value={formData.buyer_country}
-              onChange={(e) => setFormData({ ...formData, buyer_country: e.target.value })}
-            />
-          </div>
-
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Generating..." : "Generate License Key"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
