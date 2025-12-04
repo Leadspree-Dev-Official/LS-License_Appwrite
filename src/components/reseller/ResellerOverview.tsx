@@ -10,6 +10,7 @@ interface Allocation {
   id: string;
   license_limit: number;
   licenses_used: number;
+  software_id: string;
   software: { name: string; type: string; version: string };
 }
 
@@ -52,7 +53,30 @@ const ResellerOverview = () => {
       if (allocationsRes.error) throw allocationsRes.error;
       if (licensesRes.error) throw licensesRes.error;
 
-      setAllocations(allocationsRes.data || []);
+      const baseAllocations = allocationsRes.data || [];
+
+      // Enrich allocations with up-to-date usage counts from licenses table
+      const allocationsWithUsage = await Promise.all(
+        baseAllocations.map(async (allocation: any) => {
+          const { count, error: usageError } = await supabase
+            .from("licenses")
+            .select("*", { count: "exact", head: true })
+            .eq("created_by", user!.id)
+            .eq("software_id", allocation.software_id);
+
+          if (usageError) {
+            console.error("Failed to load allocation usage", usageError);
+            return allocation;
+          }
+
+          return {
+            ...allocation,
+            licenses_used: count ?? 0,
+          };
+        })
+      );
+
+      setAllocations(allocationsWithUsage);
       setLicenses(licensesRes.data || []);
     } catch (error: any) {
       console.error("Error fetching data:", error);

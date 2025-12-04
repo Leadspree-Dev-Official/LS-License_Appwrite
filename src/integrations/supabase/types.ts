@@ -54,6 +54,7 @@ export type Database = {
       }
       licenses: {
         Row: {
+          account_type: string | null
           amount: number | null
           buyer_city: string | null
           buyer_country: string | null
@@ -64,16 +65,20 @@ export type Database = {
           created_by: string | null
           currency: string | null
           end_date: string | null
+          extension_id: string | null
           id: string
           is_active: boolean
           issue_date: string | null
           license_key: string
           pay_mode: string | null
+          platform: string | null
+          remarks: string | null
           reseller_id: string | null
           software_id: string
           start_date: string | null
         }
         Insert: {
+          account_type?: string | null
           amount?: number | null
           buyer_city?: string | null
           buyer_country?: string | null
@@ -84,16 +89,20 @@ export type Database = {
           created_by?: string | null
           currency?: string | null
           end_date?: string | null
+          extension_id?: string | null
           id?: string
           is_active?: boolean
           issue_date?: string | null
           license_key: string
           pay_mode?: string | null
+          platform?: string | null
+          remarks?: string | null
           reseller_id?: string | null
           software_id: string
           start_date?: string | null
         }
         Update: {
+          account_type?: string | null
           amount?: number | null
           buyer_city?: string | null
           buyer_country?: string | null
@@ -104,11 +113,14 @@ export type Database = {
           created_by?: string | null
           currency?: string | null
           end_date?: string | null
+          extension_id?: string | null
           id?: string
           is_active?: boolean
           issue_date?: string | null
           license_key?: string
           pay_mode?: string | null
+          platform?: string | null
+          remarks?: string | null
           reseller_id?: string | null
           software_id?: string
           start_date?: string | null

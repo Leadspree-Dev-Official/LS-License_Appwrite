@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Key } from "lucide-react";
 
@@ -33,17 +34,35 @@ const AdminLicenseGeneration = () => {
     buyer_name: "",
     buyer_email: "",
     buyer_phone: "",
+    platform: "",
+    extension_id: "",
+    account_type: "buyer",
     start_date: "",
     end_date: "",
     amount: "",
     pay_mode: "",
     reseller_id: "",
+    remarks: "",
   });
 
   useEffect(() => {
     fetchSoftware();
     fetchProfiles();
   }, []);
+
+  // Auto-set dates for demo account
+  useEffect(() => {
+    if (formData.account_type === "demo") {
+      const today = new Date().toISOString().split("T")[0];
+      setFormData((prev) => ({
+        ...prev,
+        start_date: today,
+        end_date: today,
+        amount: "",
+        pay_mode: "",
+      }));
+    }
+  }, [formData.account_type]);
 
   const fetchSoftware = async () => {
     try {
@@ -88,6 +107,12 @@ const AdminLicenseGeneration = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.extension_id.trim()) {
+      toast.error("Extension ID is required");
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -109,11 +134,15 @@ const AdminLicenseGeneration = () => {
           buyer_name: formData.buyer_name,
           buyer_email: formData.buyer_email || null,
           buyer_phone: formData.buyer_phone || null,
+          platform: formData.platform || null,
+          extension_id: formData.extension_id,
+          account_type: formData.account_type,
           start_date: formData.start_date || null,
           end_date: formData.end_date || null,
-          amount: formData.amount ? parseFloat(formData.amount) : null,
-          pay_mode: formData.pay_mode || null,
+          amount: formData.account_type === "demo" ? null : (formData.amount ? parseFloat(formData.amount) : null),
+          pay_mode: formData.account_type === "demo" ? null : (formData.pay_mode || null),
           reseller_id: formData.reseller_id || null,
+          remarks: formData.remarks || null,
           is_active: isActive,
           created_by: user!.id,
         },
@@ -129,11 +158,15 @@ const AdminLicenseGeneration = () => {
         buyer_name: "",
         buyer_email: "",
         buyer_phone: "",
+        platform: "",
+        extension_id: "",
+        account_type: "buyer",
         start_date: "",
         end_date: "",
         amount: "",
         pay_mode: "",
         reseller_id: "",
+        remarks: "",
       });
     } catch (error: any) {
       toast.error(error.message || "Failed to generate license");
@@ -141,6 +174,8 @@ const AdminLicenseGeneration = () => {
       setLoading(false);
     }
   };
+
+  const isDemo = formData.account_type === "demo";
 
   return (
     <Card>
@@ -153,24 +188,42 @@ const AdminLicenseGeneration = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="software">Software *</Label>
-            <Select
-              value={formData.software_id}
-              onValueChange={(value) => setFormData({ ...formData, software_id: value })}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select software" />
-              </SelectTrigger>
-              <SelectContent>
-                {software.map((sw) => (
-                  <SelectItem key={sw.id} value={sw.id}>
-                    {sw.name} - {sw.type} v{sw.version}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="account_type">Account Type *</Label>
+              <Select
+                value={formData.account_type}
+                onValueChange={(value) => setFormData({ ...formData, account_type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select account type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="buyer">Buyer A/c</SelectItem>
+                  <SelectItem value="demo">Demo A/c</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="software">Software *</Label>
+              <Select
+                value={formData.software_id}
+                onValueChange={(value) => setFormData({ ...formData, software_id: value })}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select software" />
+                </SelectTrigger>
+                <SelectContent>
+                  {software.map((sw) => (
+                    <SelectItem key={sw.id} value={sw.id}>
+                      {sw.name} - {sw.type} v{sw.version}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -207,56 +260,91 @@ const AdminLicenseGeneration = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="start_date">Start Date</Label>
+              <Label htmlFor="platform">Platform</Label>
               <Input
-                id="start_date"
-                type="date"
-                value={formData.start_date}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                id="platform"
+                value={formData.platform}
+                onChange={(e) => setFormData({ ...formData, platform: e.target.value })}
+                placeholder="e.g., Windows, Mac, Linux"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="end_date">End Date</Label>
+            <Label htmlFor="extension_id">Extension ID *</Label>
             <Input
-              id="end_date"
-              type="date"
-              value={formData.end_date}
-              onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+              id="extension_id"
+              value={formData.extension_id}
+              onChange={(e) => setFormData({ ...formData, extension_id: e.target.value })}
+              placeholder="Enter extension ID"
+              required
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              />
-            </div>
+          {!isDemo && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="start_date">Start Date</Label>
+                  <Input
+                    id="start_date"
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="pay_mode">Pay Mode</Label>
-              <Select
-                value={formData.pay_mode}
-                onValueChange={(value) => setFormData({ ...formData, pay_mode: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select payment mode" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="UPI">UPI</SelectItem>
-                  <SelectItem value="Bank">Bank</SelectItem>
-                  <SelectItem value="Cash">Cash</SelectItem>
-                  <SelectItem value="Crypto">Crypto</SelectItem>
-                </SelectContent>
-              </Select>
+                <div className="space-y-2">
+                  <Label htmlFor="end_date">End Date</Label>
+                  <Input
+                    id="end_date"
+                    type="date"
+                    value={formData.end_date}
+                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Amount</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pay_mode">Pay Mode</Label>
+                  <Select
+                    value={formData.pay_mode}
+                    onValueChange={(value) => setFormData({ ...formData, pay_mode: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select payment mode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="UPI">UPI</SelectItem>
+                      <SelectItem value="Bank">Bank</SelectItem>
+                      <SelectItem value="Cash">Cash</SelectItem>
+                      <SelectItem value="Crypto">Crypto</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </>
+          )}
+
+          {isDemo && (
+            <div className="p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                Demo account: Start and End dates are automatically set to today's date.
+              </p>
             </div>
-          </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="reseller">Reseller</Label>
@@ -275,6 +363,17 @@ const AdminLicenseGeneration = () => {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="remarks">Remarks</Label>
+            <Textarea
+              id="remarks"
+              value={formData.remarks}
+              onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
+              placeholder="Any additional notes..."
+              rows={3}
+            />
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>

@@ -23,6 +23,10 @@ interface License {
   issue_date: string | null;
   is_active: boolean;
   created_at: string;
+  platform: string | null;
+  remarks: string | null;
+  account_type: string | null;
+  extension_id: string | null;
   software: { name: string };
 }
 
@@ -43,7 +47,7 @@ const ResellerIssuedLicensesPage = () => {
     try {
       const { data } = await supabase
         .from("licenses")
-        .select("id, license_key, buyer_name, buyer_email, buyer_phone, start_date, end_date, amount, pay_mode, issue_date, is_active, created_at, software(name)")
+        .select("id, license_key, buyer_name, buyer_email, buyer_phone, start_date, end_date, amount, pay_mode, issue_date, is_active, created_at, platform, remarks, account_type, extension_id, software(name)")
         .eq("created_by", user!.id)
         .order("created_at", { ascending: false });
 
@@ -92,6 +96,10 @@ const ResellerIssuedLicensesPage = () => {
           pay_mode: editedData.pay_mode,
           issue_date: editedData.issue_date,
           is_active: editedData.is_active,
+          platform: editedData.platform,
+          remarks: editedData.remarks,
+          account_type: editedData.account_type,
+          extension_id: editedData.extension_id,
         })
         .eq("id", id);
 
@@ -160,14 +168,18 @@ const ResellerIssuedLicensesPage = () => {
                     <TableHead className="w-[100px]">Actions</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="whitespace-nowrap">License Key</TableHead>
-                    <TableHead>Software</TableHead>
-                    <TableHead>Name</TableHead>
+                    <TableHead className="min-w-[120px]">Software</TableHead>
+                    <TableHead className="min-w-[120px]">Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
+                    <TableHead>Platform</TableHead>
+                    <TableHead>Extension ID</TableHead>
+                    <TableHead>Account Type</TableHead>
                     <TableHead className="whitespace-nowrap">Start Date</TableHead>
                     <TableHead className="whitespace-nowrap">End Date</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead className="whitespace-nowrap">Pay Mode</TableHead>
+                    <TableHead>Remarks</TableHead>
                     <TableHead>Created</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -250,7 +262,7 @@ const ResellerIssuedLicensesPage = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{license.software.name}</Badge>
+                        <span className="whitespace-nowrap">{license.software.name}</span>
                       </TableCell>
                       <TableCell>
                         {editingId === license.id ? (
@@ -261,7 +273,7 @@ const ResellerIssuedLicensesPage = () => {
                             }
                           />
                         ) : (
-                          license.buyer_name
+                          <span className="whitespace-nowrap">{license.buyer_name}</span>
                         )}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
@@ -286,6 +298,52 @@ const ResellerIssuedLicensesPage = () => {
                           />
                         ) : (
                           license.buyer_phone
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {editingId === license.id ? (
+                          <Input
+                            value={editedData.platform || ""}
+                            onChange={(e) =>
+                              setEditedData({ ...editedData, platform: e.target.value })
+                            }
+                          />
+                        ) : (
+                          license.platform || "-"
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {editingId === license.id ? (
+                          <Input
+                            value={editedData.extension_id || ""}
+                            onChange={(e) =>
+                              setEditedData({ ...editedData, extension_id: e.target.value })
+                            }
+                          />
+                        ) : (
+                          license.extension_id || "-"
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {editingId === license.id ? (
+                          <Select
+                            value={editedData.account_type || "buyer"}
+                            onValueChange={(value) =>
+                              setEditedData({ ...editedData, account_type: value })
+                            }
+                          >
+                            <SelectTrigger className="w-[100px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="buyer">Buyer</SelectItem>
+                              <SelectItem value="demo">Demo</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant={license.account_type === "demo" ? "secondary" : "outline"}>
+                            {license.account_type === "demo" ? "Demo" : "Buyer"}
+                          </Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
@@ -324,7 +382,7 @@ const ResellerIssuedLicensesPage = () => {
                             }
                           />
                         ) : (
-                          license.amount ? `$${license.amount}` : "-"
+                          license.amount ? license.amount.toLocaleString() : "-"
                         )}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
@@ -347,6 +405,18 @@ const ResellerIssuedLicensesPage = () => {
                           </Select>
                         ) : (
                           license.pay_mode || "-"
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {editingId === license.id ? (
+                          <Input
+                            value={editedData.remarks || ""}
+                            onChange={(e) =>
+                              setEditedData({ ...editedData, remarks: e.target.value })
+                            }
+                          />
+                        ) : (
+                          license.remarks || "-"
                         )}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
